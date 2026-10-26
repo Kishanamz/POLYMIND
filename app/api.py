@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import shutil
@@ -13,13 +14,21 @@ from app.llm import generate_answer
 
 
 app = FastAPI()
+
+frontend_url = os.getenv("FRONTEND_URL", "").rstrip("/")
+
+allowed_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+if frontend_url:
+    allowed_origins.append(frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[ 
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        ],
-    allow_credentials=True,
+    allow_origins=allowed_origins,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
