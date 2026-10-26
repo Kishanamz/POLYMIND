@@ -5,7 +5,7 @@ import shutil
 
 from app.pdf_loader import load_pdf
 from app.chunking import create_chunk
-from app.embedding import model
+from app.embedding import get_model
 from app.vectordb import store_documents
 
 from app.embedding import model
@@ -53,7 +53,7 @@ async def upload_pdf(file: UploadFile = File(...)):
         chunk_size=500
     )
 
-    embeddings = model.encode(chunks)
+    embeddings = get_model().encode(chunks)
 
     store_documents(
         chunks,
@@ -70,7 +70,7 @@ async def upload_pdf(file: UploadFile = File(...)):
 @app.post("/ask")
 async def ask_question(query: str):
 
-    query_embedding = model.encode(query)
+    query_embedding = get_model().encode(query)
 
     results = search_documents(query_embedding)
 
