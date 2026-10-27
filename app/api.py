@@ -7,8 +7,6 @@ from app.pdf_loader import load_pdf
 from app.chunking import create_chunk
 from app.embedding import get_model
 from app.vectordb import store_documents
-
-from app.embedding import model
 from app.vectordb import search_documents
 from app.llm import generate_answer
 
