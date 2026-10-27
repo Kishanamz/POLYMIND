@@ -3,7 +3,8 @@ import { useState } from "react";
 import "./App.css";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-const API = "http://127.0.0.1:8000";
+const API = "https://polymind-mck7.onrender.com";
+
 
 function App() {
   const [file, setFile] = useState(null);
