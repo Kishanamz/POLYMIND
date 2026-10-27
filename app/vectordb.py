@@ -8,33 +8,43 @@ collection = client.get_or_create_collection(
     metadata={"hnsw:space": "cosine"}
 )
 
-def store_documents(chunks, embeddings, filename):
-    ids = []
-    metadatas = []
 
-    for i in range(len(chunks)):
-        ids.append(f"{filename}_chunk_{i}")
+def store_documents(chunks, embeddings, filename, document_id):
+    ids = [
+        f"{document_id}_chunk_{i}"
+        for i in range(len(chunks))
+    ]
 
-        metadatas.append({
+    metadatas = [
+        {
             "source": filename,
-            "chunk_index": i
-        })
+            "document_id": document_id,
+            "chunk_index": i,
+        }
+        for i in range(len(chunks))
+    ]
 
     collection.add(
         ids=ids,
         documents=chunks,
         embeddings=embeddings,
-        metadatas=metadatas
+        metadatas=metadatas,
     )
-    print("Total documents in collection:", collection.count())
 
-def search_documents(query_embedding):
+    print(
+        f"Stored {len(chunks)} chunks for document "
+        f"{document_id}"
+    )
+
+
+def search_documents(query_embedding, document_id):
     results = collection.query(
         query_embeddings=[query_embedding],
-        n_results=3
+        n_results=3,
+        where={"document_id": document_id},
     )
 
     return {
         "documents": results["documents"][0],
-        "metadatas": results["metadatas"][0]
+        "metadatas": results["metadatas"][0],
     }

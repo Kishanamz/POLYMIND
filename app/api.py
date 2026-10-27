@@ -2,6 +2,8 @@ import os
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import shutil
+from uuid import uuid4
+from fastapi import HTTPException
 
 from app.pdf_loader import load_pdf
 from app.chunking import create_chunk
@@ -59,42 +61,53 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     if not chunks:
         return {"error": "No chunks were created from the PDF."}
+    
+    document_id = str(uuid4())
 
     embeddings = create_embeddings(chunks)
 
-    store_documents(chunks, embeddings, file.filename)
+    store_documents(
+    chunks,
+    embeddings,
+    file.filename,
+    document_id,
+)
 
     return {
-        "message": "PDF uploaded successfully",
-        "filename": file.filename,
-        "chunks": len(chunks)
-    }
+    "message": "PDF uploaded successfully",
+    "filename": file.filename,
+    "chunks": len(chunks),
+    "document_id": document_id,
+}
 
 @app.post("/ask")
-async def ask_question(query: str):
-
+async def ask_question(query: str, document_id: str):
     query_embedding = create_embedding(query)
 
-    results = search_documents(query_embedding)
+    results = search_documents(
+        query_embedding,
+        document_id,
+    )
 
     documents = results["documents"]
     metadatas = results["metadatas"]
-    print("Retrieved documents:", results["documents"])
-    print("Retrieved metadata:", results["metadatas"]) 
-    content = "\n\n".join(documents)
-    print("Context length:", len(content))
-    answer = generate_answer(
-        query,
-        content
-    )
-    sources = []
 
-    for metadata in metadatas:
-        if metadata["source"] not in sources:
-            sources.append(metadata["source"])
+    if not documents:
+        raise HTTPException(
+            status_code=404,
+            detail="No matching document chunks found. Please upload the PDF again.",
+        )
+
+    content = "\n\n".join(documents)
+    answer = generate_answer(query, content)
+
+    sources = list(dict.fromkeys(
+        metadata["source"] for metadata in metadatas
+    ))
 
     return {
         "question": query,
         "answer": answer,
-        "sources": sources
+        "sources": sources,
+        "document_id": document_id,
     }

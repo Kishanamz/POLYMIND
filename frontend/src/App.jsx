@@ -15,6 +15,7 @@ function App() {
   const [sources, setSources] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [asking, setAsking] = useState(false);
+  const [documentId, setDocumentId] = useState(null);
 
   const handleUpload = async () => {
     if (!file) {
@@ -40,10 +41,12 @@ function App() {
         throw new Error(data.detail || "Upload failed.");
       }
 
-      setMessage(
-        `${data.filename || file.name} uploaded successfully!`
-      );
-      setFile(null);
+     setDocumentId(data.document_id);
+
+     setMessage(
+  `${data.filename || file.name} uploaded successfully!`
+);
+setFile(null);
     } catch (error) {
       setMessage(`Upload failed: ${error.message}`);
     } finally {
@@ -51,35 +54,46 @@ function App() {
     }
   };
 
-  const handleAsk = async (question = query) => {
-    if (!question.trim()) return;
 
-    setQuery(question);
-    setAsking(true);
-    setAnswer("");
-    setSources([]);
-    setMessage("");
+const handleAsk = async (question = query) => {
+  if (!question.trim()) return;
 
-    try {
-      const response = await fetch(
-        `${API}/ask?query=${encodeURIComponent(question)}`,
-        { method: "POST" }
-      );
+  if (!documentId) {
+    setMessage("Please upload a PDF before asking a question.");
+    return;
+  }
 
-      const data = await response.json();
+  setQuery(question);
+  setAsking(true);
+  setAnswer("");
+  setSources([]);
+  setMessage("");
 
-      if (!response.ok) {
-        throw new Error(data.detail || "Could not get an answer.");
-      }
+  
+try {
+  const response = await fetch(
+    `${API}/ask?query=${encodeURIComponent(question)}&document_id=${encodeURIComponent(documentId)}`,
+    { method: "POST" }
+  );
 
-      setAnswer(data.answer || "No answer was returned.");
-      setSources(data.sources || []);
-    } catch (error) {
-      setMessage(`Something went wrong: ${error.message}`);
-    } finally {
-      setAsking(false);
-    }
-  };
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.detail || "Could not get an answer."
+    );
+  }
+
+  setAnswer(data.answer || "No answer was returned.");
+  setSources(data.sources || []);
+
+} catch (error) {
+  setMessage(`Something went wrong: ${error.message}`);
+} finally {
+  setAsking(false);
+}
+};
+
 
   const suggestions = [
     "What is this document about?",
