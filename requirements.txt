@@ -2,7 +2,6 @@ fastapi
 uvicorn[standard]
 python-multipart
 pypdf
-sentence-transformers
 chromadb
 google-genai
 python-dotenv

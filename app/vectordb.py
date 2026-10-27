@@ -1,18 +1,18 @@
+
 import chromadb
 
-client = chromadb.PersistentClient(
-    path="chromadb"
-    )
+client = chromadb.PersistentClient(path="chromadb")
+
 collection = client.get_or_create_collection(
-    name="documents")
+    name="documents_gemini",
+    metadata={"hnsw:space": "cosine"}
+)
 
 def store_documents(chunks, embeddings, filename):
-
     ids = []
     metadatas = []
 
     for i in range(len(chunks)):
-
         ids.append(f"{filename}_chunk_{i}")
 
         metadatas.append({
@@ -23,13 +23,14 @@ def store_documents(chunks, embeddings, filename):
     collection.add(
         ids=ids,
         documents=chunks,
-        embeddings=embeddings.tolist(),
+        embeddings=embeddings,
         metadatas=metadatas
     )
+    print("Total documents in collection:", collection.count())
 
 def search_documents(query_embedding):
     results = collection.query(
-        query_embeddings=[query_embedding.tolist()],
+        query_embeddings=[query_embedding],
         n_results=3
     )
 

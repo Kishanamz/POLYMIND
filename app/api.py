@@ -5,7 +5,7 @@ import shutil
 
 from app.pdf_loader import load_pdf
 from app.chunking import create_chunk
-from app.embedding import get_model
+from app.embedding import create_embedding, create_embeddings
 from app.vectordb import store_documents
 from app.vectordb import search_documents
 from app.llm import generate_answer
@@ -36,28 +36,33 @@ def home():
     return {"message": "PolyMind API is running"}
 
 
+
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
+    os.makedirs("data", exist_ok=True)
 
-    file_path = f"data/{file.filename}"
+    file_path = os.path.join("data", file.filename)
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
+    print("Uploaded filename:", file.filename)
+
     text = load_pdf(file_path)
+    print("Extracted text length:", len(text))
 
-    chunks = create_chunk(
-        text,
-        chunk_size=500
-    )
+    if not text or not text.strip():
+        return {"error": "No text could be extracted from this PDF."}
 
-    embeddings = get_model().encode(chunks)
+    chunks = create_chunk(text, chunk_size=500)
+    print("Number of chunks:", len(chunks))
 
-    store_documents(
-        chunks,
-        embeddings,
-        file.filename
-    )
+    if not chunks:
+        return {"error": "No chunks were created from the PDF."}
+
+    embeddings = create_embeddings(chunks)
+
+    store_documents(chunks, embeddings, file.filename)
 
     return {
         "message": "PDF uploaded successfully",
@@ -68,20 +73,20 @@ async def upload_pdf(file: UploadFile = File(...)):
 @app.post("/ask")
 async def ask_question(query: str):
 
-    query_embedding = get_model().encode(query)
+    query_embedding = create_embedding(query)
 
     results = search_documents(query_embedding)
 
     documents = results["documents"]
     metadatas = results["metadatas"]
-
+    print("Retrieved documents:", results["documents"])
+    print("Retrieved metadata:", results["metadatas"]) 
     content = "\n\n".join(documents)
-
+    print("Context length:", len(content))
     answer = generate_answer(
         query,
         content
     )
-
     sources = []
 
     for metadata in metadatas:

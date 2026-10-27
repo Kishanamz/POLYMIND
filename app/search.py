@@ -1,16 +1,9 @@
-from sentence_transformers import util
 
-from app.embedding import model
+from app.embedding import create_embedding
+from app.vectordb import search_documents
 
-def search(query,chunks,embeddings):
 
-    query_embedding = model.encode(query)
-
-    scores = util.cos_sim(
-        query_embedding,
-        embeddings
-    )[0]
-
-    best_match = scores.argmax().item()
-
-    return chunks[best_match], scores[best_match].item()
+def search(query):
+    query_embedding = create_embedding(query)
+    results = search_documents(query_embedding)
+    return results
